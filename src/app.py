@@ -2,7 +2,7 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 import os
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_migrate import Migrate
 from api.utils import APIException, generate_sitemap
 from api.models import db
@@ -19,7 +19,7 @@ app.url_map.strict_slashes = False
 
 # Database configuration
 db_url = os.getenv("DATABASE_URL")
-if db_url is not None:
+if db_url:
     app.config['SQLALCHEMY_DATABASE_URI'] = db_url.replace("postgres://", "postgresql://")
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:////tmp/test.db"
@@ -47,13 +47,21 @@ def sitemap():
         return generate_sitemap(app)
     return jsonify({"error": "Not available in production"}), 404
 
-# Serve only API routes with Flask, React handles everything else
-@app.route('/api/<path:path>', methods=['GET', 'POST', 'PUT', 'DELETE'])
-def api_routes(path):
+# Serving the React app
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve_react_app(path):
     """
-    Serve only API routes with Flask.
+    Serve the React app for any frontend route.
     """
-    return api(path)
+    dist_dir = os.path.join(os.path.dirname(__file__), '../frontend/dist')
+
+    # Serve index.html for frontend routes
+    if path == "" or not os.path.exists(os.path.join(dist_dir, path)):
+        return send_from_directory(dist_dir, 'index.html')
+    else:
+        # Serve static assets (e.g., CSS, JS, images)
+        return send_from_directory(dist_dir, path)
 
 # This only runs if `$ python src/app.py` is executed
 if __name__ == '__main__':
