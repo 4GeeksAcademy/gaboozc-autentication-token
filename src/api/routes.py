@@ -3,9 +3,9 @@ API Routes for Authentication and Protected Resources
 """
 import re
 import os
-from flask import request, jsonify
+from flask import request, jsonify, Blueprint
 from werkzeug.security import generate_password_hash, check_password_hash
-import jwt
+import jwt 
 import datetime
 from functools import wraps
 from api.models import db, User
